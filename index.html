@@ -34,13 +34,13 @@ canvas{
 </head>
 <body>
 
-<h1>🌱 Agrinho 2026 - Campo e Cidade 🏙️</h1>
+<h1>🤠 Agrinho 2026 - Campo e Cidade 🏙️</h1>
 
 <div id="ui">
     <div>💰 Dinheiro: <span id="money">100</span></div>
     <div>🌽 <span id="corn">0</span></div>
     <div>🍅 <span id="tomato">0</span></div>
-    <div>🫘 <span id="soy">0</span></div>
+    <div>🌾 <span id="soy">0</span></div>
 </div>
 
 <canvas id="game" width="1000" height="600"></canvas>
@@ -70,7 +70,7 @@ const crops = {
         speed:1.0
     },
     soy:{
-        emoji:"🫘",
+        emoji:"🌾",
         cost:20,
         speed:0.7
     }
@@ -147,7 +147,7 @@ canvas.addEventListener("click", e=>{
 
 1 - Milho (R$10)
 2 - Tomate (R$15)
-3 - Soja (R$20)`
+3 - Trigo (R$20)`
             );
 
             let cropType = null;
@@ -359,7 +359,7 @@ function drawCity(){
     );
 
     ctx.fillText(
-        `🫘 ${order.soy}`,
+        `🌾 ${order.soy}`,
         city.x+20,
         city.y+160
     );
@@ -380,7 +380,7 @@ function drawCity(){
 function drawPlayer(){
 
     ctx.font = "36px Arial";
-    ctx.fillText("🧑‍🌾", player.x, player.y);
+    ctx.fillText("🤠", player.x, player.y);
 }
 
 function draw(){
