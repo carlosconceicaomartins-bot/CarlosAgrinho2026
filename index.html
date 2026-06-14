@@ -55,25 +55,25 @@ let money = 100;
 const inventory = {
     corn:0,
     tomato:0,
-    soy:0
+    wheat:0
 };
 
 const crops = {
     corn:{
         emoji:"🌽",
         cost:10,
-        speed:1.4
+        speed:2.0
     },
     tomato:{
         emoji:"🍅",
         cost:15,
-        speed:1.0
+        speed:2.5
     },
     soy:{
-        emoji:"🌾",
-        cost:20,
-        speed:0.7
-    }
+    emoji:"🌾",
+    cost:20,
+    speed:3.0
+}
 };
 
 const player = {
@@ -147,7 +147,7 @@ canvas.addEventListener("click", e=>{
 
 1 - Milho (R$10)
 2 - Tomate (R$15)
-3 - trigo (R$20)`
+3 - Trigo (R$20)
             );
 
             let cropType = null;
@@ -179,7 +179,7 @@ function updateUI(){
     document.getElementById("money").textContent = money;
     document.getElementById("corn").textContent = inventory.corn;
     document.getElementById("tomato").textContent = inventory.tomato;
-    document.getElementById("soy").textContent = inventory.wheat;
+    document.getElementById("wheat").textContent = inventory.wheat;
 }
 
 let order;
@@ -359,7 +359,7 @@ function drawCity(){
     );
 
     ctx.fillText(
-        `🌾 ${order.soy}`,
+        `🌾 ${order.wheat}`,
         city.x+20,
         city.y+160
     );
@@ -381,6 +381,7 @@ function drawPlayer(){
 
     ctx.font = "36px Arial";
     ctx.fillText("🤠", player.x, player.y);
+
 }
 
 function draw(){
