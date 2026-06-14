@@ -40,7 +40,7 @@ canvas{
     <div>💰 Dinheiro: <span id="money">100</span></div>
     <div>🌽 <span id="cor">0</span></div>
     <div>🍅 <span id="tomato">0</span></div>
-    <div>🌾 <span id="wheat">0</span></div>
+    <div>🌾 <span id="soy">0</span></div>
 </div>
 
 <canvas id="game" width="1000" height="600"></canvas>
@@ -179,7 +179,7 @@ function updateUI(){
     document.getElementById("money").textContent = money;
     document.getElementById("corn").textContent = inventory.corn;
     document.getElementById("tomato").textContent = inventory.tomato;
-    document.getElementById("wheat").textContent = inventory.wheat;
+    document.getElementById("soy").textContent = inventory.soy;
 }
 
 let order;
