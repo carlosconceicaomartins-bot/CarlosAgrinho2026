@@ -1,110 +1,210 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agrinho 2026: Missão Campo Verde</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #e8f5e9;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agrinho 2026 - Campo e Cidade Conectados</title>
 
-        h1 {
-            color: #1b5e20;
-            margin: 5px 0;
-            font-size: 1.8rem;
-        }
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-        #game-container {
-            position: relative;
-            width: 400px;
-            height: 500px;
-            background: linear-gradient(to bottom, #a5d6a7, #81c784);
-            border: 4px solid #2e7d32;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
+body{
+    background:#87CEEB;
+    font-family:Arial, sans-serif;
+    text-align:center;
+}
 
-        /* Estradas/Linhas divisórias para dar sensação de movimento */
-        .line {
-            position: absolute;
-            width: 4px;
-            height: 80px;
-            background-color: rgba(255, 255, 255, 0.4);
-            left: 50%;
-            transform: translateX(-50%);
-            animation: moveLines 1s linear infinite;
-        }
-        .line-1 { top: -100px; }
-        .line-2 { top: 100px; }
-        .line-3 { top: 300px; }
+h1{
+    margin:15px;
+    color:#1f4d1f;
+}
 
-        @keyframes moveLines {
-            0% { top: -100px; }
-            100% { top: 500px; }
-        }
+#info{
+    font-size:22px;
+    margin-bottom:10px;
+}
 
-        /* Jogador (Trator Tecnológico) */
-        #player {
-            position: absolute;
-            bottom: 20px;
-            left: 175px; /* Posição inicial (meio) */
-            width: 50px;
-            height: 65px;
-            background-color: #2e7d32;
-            border-radius: 8px;
-            border: 2px solid #1b5e20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            transition: left 0.1s ease-out;
-            z-index: 10;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
+canvas{
+    background:#9bd770;
+    border:4px solid #2d572c;
+    border-radius:10px;
+}
+</style>
+</head>
+<body>
 
-        /* Itens Caindo */
-        .item {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            top: -50px;
-        }
+<h1>🌱 Agrinho 2026 - Campo e Cidade Conectados 🏙️</h1>
+<div id="info">
+    Pontos: <span id="score">0</span>
+</div>
 
-        /* Painel de Pontos */
-        #hud {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            color: #1b5e20;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 5px 10px;
-            border-radius: 5px;
-            z-index: 20;
-        }
+<canvas id="game" width="900" height="500"></canvas>
 
-        /* Telas de Início e Fim */
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(232
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let score = 0;
+
+const player = {
+    x: 100,
+    y: 220,
+    size: 35,
+    speed: 5,
+    carrying: false
+};
+
+const food = {
+    x: 150,
+    y: 250,
+    size: 25
+};
+
+const city = {
+    x: 760,
+    y: 180,
+    w: 100,
+    h: 140
+};
+
+const keys = {};
+
+document.addEventListener("keydown", e => {
+    keys[e.key] = true;
+});
+
+document.addEventListener("keyup", e => {
+    keys[e.key] = false;
+});
+
+function drawBackground(){
+
+    // Céu
+    ctx.fillStyle = "#87CEEB";
+    ctx.fillRect(0,0,900,500);
+
+    // Campo
+    ctx.fillStyle = "#7ec850";
+    ctx.fillRect(0,0,450,500);
+
+    // Cidade
+    ctx.fillStyle = "#d9d9d9";
+    ctx.fillRect(450,0,450,500);
+
+    // Estrada
+    ctx.fillStyle = "#555";
+    ctx.fillRect(425,0,50,500);
+
+    // Plantações
+    ctx.fillStyle = "#4CAF50";
+
+    for(let i=40;i<400;i+=60){
+        for(let j=50;j<450;j+=60){
+            ctx.beginPath();
+            ctx.arc(i,j,10,0,Math.PI*2);
+            ctx.fill();
+        }
+    }
+
+    // Prédios
+    ctx.fillStyle = "#888";
+
+    ctx.fillRect(550,180,70,140);
+    ctx.fillRect(650,140,80,180);
+    ctx.fillRect(760,120,90,200);
+}
+
+function drawFood(){
+    if(!player.carrying){
+        ctx.font = "28px Arial";
+        ctx.fillText("🍅", food.x, food.y);
+    }
+}
+
+function drawCityTarget(){
+    ctx.strokeStyle = "gold";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(city.x, city.y, city.w, city.h);
+
+    ctx.fillStyle = "black";
+    ctx.font = "18px Arial";
+    ctx.fillText("Mercado", city.x+8, city.y-10);
+}
+
+function drawPlayer(){
+    ctx.font = "34px Arial";
+    ctx.fillText("🧑‍🌾", player.x, player.y);
+
+    if(player.carrying){
+        ctx.fillText("🍅", player.x+20, player.y-15);
+    }
+}
+
+function collision(a,b){
+    return (
+        a.x < b.x + b.size &&
+        a.x + a.size > b.x &&
+        a.y < b.y + b.size &&
+        a.y + a.size > b.y
+    );
+}
+
+function update(){
+
+    if(keys["ArrowUp"] || keys["w"])
+        player.y -= player.speed;
+
+    if(keys["ArrowDown"] || keys["s"])
+        player.y += player.speed;
+
+    if(keys["ArrowLeft"] || keys["a"])
+        player.x -= player.speed;
+
+    if(keys["ArrowRight"] || keys["d"])
+        player.x += player.speed;
+
+    player.x = Math.max(0, Math.min(canvas.width-40, player.x));
+    player.y = Math.max(35, Math.min(canvas.height-10, player.y));
+
+    if(!player.carrying && collision(player, food)){
+        player.carrying = true;
+    }
+
+    if(player.carrying &&
+        player.x > city.x &&
+        player.x < city.x + city.w &&
+        player.y > city.y &&
+        player.y < city.y + city.h){
+
+        score++;
+        document.getElementById("score").textContent = score;
+
+        player.carrying = false;
+
+        food.x = 50 + Math.random()*320;
+        food.y = 50 + Math.random()*350;
+    }
+}
+
+function draw(){
+    drawBackground();
+    drawFood();
+    drawCityTarget();
+    drawPlayer();
+}
+
+function gameLoop(){
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
