@@ -38,9 +38,9 @@ canvas{
 
 <div id="ui">
     <div>💰 Dinheiro: <span id="money">100</span></div>
-    <div>🌽 <span id="corn">0</span></div>
+    <div>🌽 <span id="cor">0</span></div>
     <div>🍅 <span id="tomato">0</span></div>
-    <div>🫘 <span id="soy">0</span></div>
+    <div>🌾 <span id="wheat">0</span></div>
 </div>
 
 <canvas id="game" width="1000" height="600"></canvas>
@@ -70,7 +70,7 @@ const crops = {
         speed:1.0
     },
     soy:{
-        emoji:"🫘",
+        emoji:"🌾",
         cost:20,
         speed:0.7
     }
@@ -147,14 +147,14 @@ canvas.addEventListener("click", e=>{
 
 1 - Milho (R$10)
 2 - Tomate (R$15)
-3 - Soja (R$20)`
+3 - trigo (R$20)`
             );
 
             let cropType = null;
 
             if(choice==="1") cropType="corn";
             if(choice==="2") cropType="tomato";
-            if(choice==="3") cropType="soy";
+            if(choice==="3") cropType="wheat";
 
             if(!cropType) return;
 
@@ -179,7 +179,7 @@ function updateUI(){
     document.getElementById("money").textContent = money;
     document.getElementById("corn").textContent = inventory.corn;
     document.getElementById("tomato").textContent = inventory.tomato;
-    document.getElementById("soy").textContent = inventory.soy;
+    document.getElementById("soy").textContent = inventory.wheat;
 }
 
 let order;
@@ -189,7 +189,7 @@ function generateOrder(){
     order = {
         corn:Math.floor(Math.random()*3),
         tomato:Math.floor(Math.random()*3),
-        soy:Math.floor(Math.random()*2),
+        wheat:Math.floor(Math.random()*2),
         reward:50 + Math.floor(Math.random()*120)
     };
 }
@@ -265,12 +265,12 @@ function deliverOrder(){
         if(
             inventory.corn >= order.corn &&
             inventory.tomato >= order.tomato &&
-            inventory.soy >= order.soy
+            inventory.wheat >= order.wheat
         ){
 
             inventory.corn -= order.corn;
             inventory.tomato -= order.tomato;
-            inventory.soy -= order.soy;
+            inventory.wheat -= order.wheat;
 
             money += order.reward;
 
@@ -359,7 +359,7 @@ function drawCity(){
     );
 
     ctx.fillText(
-        `🫘 ${order.soy}`,
+        `🌾 ${order.soy}`,
         city.x+20,
         city.y+160
     );
@@ -380,7 +380,7 @@ function drawCity(){
 function drawPlayer(){
 
     ctx.font = "36px Arial";
-    ctx.fillText("🧑‍🌾", player.x, player.y);
+    ctx.fillText("🤠", player.x, player.y);
 }
 
 function draw(){
