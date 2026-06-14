@@ -3,207 +3,326 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agrinho 2026 - Campo e Cidade Conectados</title>
+<title>Agrinho 2026 - Campo e Cidade</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
 body{
-    background:#87CEEB;
-    font-family:Arial, sans-serif;
+    font-family: Arial, sans-serif;
+    background:#dff5d8;
     text-align:center;
+    margin:20px;
 }
 
 h1{
-    margin:15px;
-    color:#1f4d1f;
+    color:#2e7d32;
 }
 
-#info{
-    font-size:22px;
-    margin-bottom:10px;
+#topo{
+    display:flex;
+    justify-content:center;
+    gap:30px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+    font-size:18px;
 }
 
-canvas{
-    background:#9bd770;
-    border:4px solid #2d572c;
+#farm{
+    width:500px;
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:5px;
+}
+
+.plot{
+    width:90px;
+    height:90px;
+    background:#8d6e63;
+    border-radius:8px;
+    cursor:pointer;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:35px;
+    color:white;
+    user-select:none;
+}
+
+.plot:hover{
+    filter:brightness(1.1);
+}
+
+#cidade{
+    margin-top:20px;
+    background:white;
+    padding:15px;
     border-radius:10px;
+    display:inline-block;
+}
+
+button{
+    padding:10px 15px;
+    margin-top:10px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+#evento{
+    margin-top:15px;
+    font-size:20px;
+    color:#1565c0;
+    font-weight:bold;
 }
 </style>
 </head>
 <body>
 
-<h1>🌱 Agrinho 2026 - Campo e Cidade Conectados 🏙️</h1>
-<div id="info">
-    Pontos: <span id="score">0</span>
+<h1>🌱 Agrinho 2026 - Campo e Cidade 🏙️</h1>
+
+<div id="topo">
+    <div>💰 Dinheiro: R$ <span id="money">100</span></div>
+    <div>🌽 <span id="corn">0</span></div>
+    <div>🍅 <span id="tomato">0</span></div>
+    <div>🫘 <span id="soy">0</span></div>
 </div>
 
-<canvas id="game" width="900" height="500"></canvas>
+<div id="farm"></div>
+
+<div id="cidade">
+    <h2>🏙️ Pedido da Cidade</h2>
+
+    <p>
+        🌽 <span id="reqCorn"></span>
+        🍅 <span id="reqTomato"></span>
+        🫘 <span id="reqSoy"></span>
+    </p>
+
+    <p>💵 Recompensa: R$ <span id="reward"></span></p>
+
+    <button onclick="deliver()">Entregar Pedido</button>
+</div>
+
+<div id="evento"></div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
 
-let score = 0;
+const farm = document.getElementById("farm");
 
-const player = {
-    x: 100,
-    y: 220,
-    size: 35,
-    speed: 5,
-    carrying: false
+let money = 100;
+
+let inventory = {
+    corn:0,
+    tomato:0,
+    soy:0
 };
 
-const food = {
-    x: 150,
-    y: 250,
-    size: 25
+let growthBonus = 1;
+
+const crops = {
+    corn:{
+        emoji:"🌽",
+        cost:10,
+        grow:20
+    },
+    tomato:{
+        emoji:"🍅",
+        cost:15,
+        grow:15
+    },
+    soy:{
+        emoji:"🫘",
+        cost:20,
+        grow:10
+    }
 };
 
-const city = {
-    x: 760,
-    y: 180,
-    w: 100,
-    h: 140
-};
+let plots = [];
 
-const keys = {};
+for(let i=0;i<25;i++){
 
-document.addEventListener("keydown", e => {
-    keys[e.key] = true;
-});
+    let div = document.createElement("div");
+    div.className="plot";
 
-document.addEventListener("keyup", e => {
-    keys[e.key] = false;
-});
+    plots.push({
+        crop:null,
+        progress:0,
+        element:div
+    });
 
-function drawBackground(){
+    div.onclick=()=>plant(i);
 
-    // Céu
-    ctx.fillStyle = "#87CEEB";
-    ctx.fillRect(0,0,900,500);
-
-    // Campo
-    ctx.fillStyle = "#7ec850";
-    ctx.fillRect(0,0,450,500);
-
-    // Cidade
-    ctx.fillStyle = "#d9d9d9";
-    ctx.fillRect(450,0,450,500);
-
-    // Estrada
-    ctx.fillStyle = "#555";
-    ctx.fillRect(425,0,50,500);
-
-    // Plantações
-    ctx.fillStyle = "#4CAF50";
-
-    for(let i=40;i<400;i+=60){
-        for(let j=50;j<450;j+=60){
-            ctx.beginPath();
-            ctx.arc(i,j,10,0,Math.PI*2);
-            ctx.fill();
-        }
-    }
-
-    // Prédios
-    ctx.fillStyle = "#888";
-
-    ctx.fillRect(550,180,70,140);
-    ctx.fillRect(650,140,80,180);
-    ctx.fillRect(760,120,90,200);
+    farm.appendChild(div);
 }
 
-function drawFood(){
-    if(!player.carrying){
-        ctx.font = "28px Arial";
-        ctx.fillText("🍅", food.x, food.y);
-    }
-}
+function plant(index){
 
-function drawCityTarget(){
-    ctx.strokeStyle = "gold";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(city.x, city.y, city.w, city.h);
+    const choice = prompt(
+`O que deseja plantar?
 
-    ctx.fillStyle = "black";
-    ctx.font = "18px Arial";
-    ctx.fillText("Mercado", city.x+8, city.y-10);
-}
-
-function drawPlayer(){
-    ctx.font = "34px Arial";
-    ctx.fillText("🧑‍🌾", player.x, player.y);
-
-    if(player.carrying){
-        ctx.fillText("🍅", player.x+20, player.y-15);
-    }
-}
-
-function collision(a,b){
-    return (
-        a.x < b.x + b.size &&
-        a.x + a.size > b.x &&
-        a.y < b.y + b.size &&
-        a.y + a.size > b.y
+1 - Milho (R$10)
+2 - Tomate (R$15)
+3 - Soja (R$20)`
     );
-}
 
-function update(){
+    let cropType;
 
-    if(keys["ArrowUp"] || keys["w"])
-        player.y -= player.speed;
+    if(choice=="1") cropType="corn";
+    else if(choice=="2") cropType="tomato";
+    else if(choice=="3") cropType="soy";
+    else return;
 
-    if(keys["ArrowDown"] || keys["s"])
-        player.y += player.speed;
+    let plot = plots[index];
 
-    if(keys["ArrowLeft"] || keys["a"])
-        player.x -= player.speed;
+    if(plot.crop) return;
 
-    if(keys["ArrowRight"] || keys["d"])
-        player.x += player.speed;
-
-    player.x = Math.max(0, Math.min(canvas.width-40, player.x));
-    player.y = Math.max(35, Math.min(canvas.height-10, player.y));
-
-    if(!player.carrying && collision(player, food)){
-        player.carrying = true;
+    if(money < crops[cropType].cost){
+        alert("Dinheiro insuficiente!");
+        return;
     }
 
-    if(player.carrying &&
-        player.x > city.x &&
-        player.x < city.x + city.w &&
-        player.y > city.y &&
-        player.y < city.y + city.h){
+    money -= crops[cropType].cost;
 
-        score++;
-        document.getElementById("score").textContent = score;
+    plot.crop = cropType;
+    plot.progress = 0;
 
-        player.carrying = false;
+    updateUI();
+}
 
-        food.x = 50 + Math.random()*320;
-        food.y = 50 + Math.random()*350;
+function updateUI(){
+
+    document.getElementById("money").textContent = money;
+
+    document.getElementById("corn").textContent = inventory.corn;
+    document.getElementById("tomato").textContent = inventory.tomato;
+    document.getElementById("soy").textContent = inventory.soy;
+
+    plots.forEach(plot=>{
+
+        if(!plot.crop){
+            plot.element.innerHTML="";
+            return;
+        }
+
+        if(plot.progress >= 100){
+            plot.element.innerHTML="✅";
+        }else{
+            plot.element.innerHTML=crops[plot.crop].emoji;
+        }
+    });
+}
+
+setInterval(()=>{
+
+    plots.forEach(plot=>{
+
+        if(!plot.crop) return;
+
+        if(plot.progress < 100){
+
+            plot.progress += crops[plot.crop].grow * growthBonus;
+
+            if(plot.progress > 100)
+                plot.progress = 100;
+
+        }
+    });
+
+    updateUI();
+
+},1000);
+
+plots.forEach(plot=>{
+
+    plot.element.addEventListener("dblclick",()=>{
+
+        if(plot.crop && plot.progress >= 100){
+
+            inventory[plot.crop]++;
+
+            plot.crop=null;
+            plot.progress=0;
+
+            updateUI();
+        }
+
+    });
+
+});
+
+let order;
+
+function newOrder(){
+
+    order={
+        corn:Math.floor(Math.random()*3),
+        tomato:Math.floor(Math.random()*3),
+        soy:Math.floor(Math.random()*2),
+        reward:50+Math.floor(Math.random()*100)
+    };
+
+    document.getElementById("reqCorn").textContent=order.corn;
+    document.getElementById("reqTomato").textContent=order.tomato;
+    document.getElementById("reqSoy").textContent=order.soy;
+    document.getElementById("reward").textContent=order.reward;
+}
+
+function deliver(){
+
+    if(
+        inventory.corn >= order.corn &&
+        inventory.tomato >= order.tomato &&
+        inventory.soy >= order.soy
+    ){
+
+        inventory.corn -= order.corn;
+        inventory.tomato -= order.tomato;
+        inventory.soy -= order.soy;
+
+        money += order.reward;
+
+        alert("Pedido entregue!");
+
+        if(money >= 1000){
+            alert("🏆 Parabéns! Você conectou o campo e a cidade e venceu!");
+        }
+
+        newOrder();
+        updateUI();
+
+    }else{
+        alert("Você não possui produtos suficientes.");
     }
 }
 
-function draw(){
-    drawBackground();
-    drawFood();
-    drawCityTarget();
-    drawPlayer();
+function randomEvent(){
+
+    const eventBox = document.getElementById("evento");
+
+    if(Math.random()<0.5){
+
+        growthBonus = 1.3;
+
+        eventBox.innerHTML="🌧️ Chuva! Crescimento acelerado.";
+
+    }else{
+
+        growthBonus = 0.7;
+
+        eventBox.innerHTML="☀️ Seca! Crescimento reduzido.";
+
+    }
+
+    setTimeout(()=>{
+        growthBonus=1;
+        eventBox.innerHTML="";
+    },10000);
 }
 
-function gameLoop(){
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
+setInterval(randomEvent,30000);
 
-gameLoop();
+newOrder();
+updateUI();
+
 </script>
 
 </body>
