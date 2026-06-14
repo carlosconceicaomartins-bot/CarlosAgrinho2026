@@ -7,71 +7,28 @@
 
 <style>
 body{
-    font-family: Arial, sans-serif;
-    background:#dff5d8;
+    margin:0;
+    background:#dff4d8;
+    font-family:Arial, sans-serif;
     text-align:center;
-    margin:20px;
 }
 
 h1{
     color:#2e7d32;
 }
 
-#topo{
+#ui{
     display:flex;
     justify-content:center;
-    gap:30px;
+    gap:20px;
     flex-wrap:wrap;
-    margin-bottom:20px;
-    font-size:18px;
-}
-
-#farm{
-    width:500px;
-    margin:auto;
-    display:grid;
-    grid-template-columns:repeat(5, 1fr);
-    gap:5px;
-}
-
-.plot{
-    width:90px;
-    height:90px;
-    background:#8d6e63;
-    border-radius:8px;
-    cursor:pointer;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:35px;
-    color:white;
-    user-select:none;
-}
-
-.plot:hover{
-    filter:brightness(1.1);
-}
-
-#cidade{
-    margin-top:20px;
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    display:inline-block;
-}
-
-button{
-    padding:10px 15px;
-    margin-top:10px;
-    cursor:pointer;
+    margin-bottom:10px;
     font-weight:bold;
 }
 
-#evento{
-    margin-top:15px;
-    font-size:20px;
-    color:#1565c0;
-    font-weight:bold;
+canvas{
+    border:4px solid #2e7d32;
+    background:#8fd175;
 }
 </style>
 </head>
@@ -79,249 +36,376 @@ button{
 
 <h1>🌱 Agrinho 2026 - Campo e Cidade 🏙️</h1>
 
-<div id="topo">
-    <div>💰 Dinheiro: R$ <span id="money">100</span></div>
+<div id="ui">
+    <div>💰 Dinheiro: <span id="money">100</span></div>
     <div>🌽 <span id="corn">0</span></div>
     <div>🍅 <span id="tomato">0</span></div>
     <div>🫘 <span id="soy">0</span></div>
 </div>
 
-<div id="farm"></div>
-
-<div id="cidade">
-    <h2>🏙️ Pedido da Cidade</h2>
-
-    <p>
-        🌽 <span id="reqCorn"></span>
-        🍅 <span id="reqTomato"></span>
-        🫘 <span id="reqSoy"></span>
-    </p>
-
-    <p>💵 Recompensa: R$ <span id="reward"></span></p>
-
-    <button onclick="deliver()">Entregar Pedido</button>
-</div>
-
-<div id="evento"></div>
+<canvas id="game" width="1000" height="600"></canvas>
 
 <script>
 
-const farm = document.getElementById("farm");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
 let money = 100;
 
-let inventory = {
+const inventory = {
     corn:0,
     tomato:0,
     soy:0
 };
 
-let growthBonus = 1;
-
 const crops = {
     corn:{
         emoji:"🌽",
         cost:10,
-        grow:20
+        speed:1.4
     },
     tomato:{
         emoji:"🍅",
         cost:15,
-        grow:15
+        speed:1.0
     },
     soy:{
         emoji:"🫘",
         cost:20,
-        grow:10
+        speed:0.7
     }
 };
 
-let plots = [];
+const player = {
+    x:120,
+    y:400,
+    size:35,
+    speed:4
+};
 
-for(let i=0;i<25;i++){
+const city = {
+    x:760,
+    y:120,
+    w:180,
+    h:260
+};
 
-    let div = document.createElement("div");
-    div.className="plot";
+const farm = [];
 
-    plots.push({
-        crop:null,
-        progress:0,
-        element:div
-    });
+const rows = 3;
+const cols = 5;
 
-    div.onclick=()=>plant(i);
+const startX = 80;
+const startY = 80;
 
-    farm.appendChild(div);
+const tileSize = 90;
+const gap = 15;
+
+for(let row=0; row<rows; row++){
+
+    for(let col=0; col<cols; col++){
+
+        farm.push({
+            x:startX + col*(tileSize+gap),
+            y:startY + row*(tileSize+gap),
+            crop:null,
+            progress:0
+        });
+
+    }
 }
 
-function plant(index){
+const keys = {};
 
-    const choice = prompt(
-`O que deseja plantar?
+document.addEventListener("keydown", e=>{
+    keys[e.key] = true;
+});
+
+document.addEventListener("keyup", e=>{
+    keys[e.key] = false;
+});
+
+canvas.addEventListener("click", e=>{
+
+    const rect = canvas.getBoundingClientRect();
+
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    farm.forEach(plot=>{
+
+        if(
+            mx > plot.x &&
+            mx < plot.x + tileSize &&
+            my > plot.y &&
+            my < plot.y + tileSize &&
+            !plot.crop
+        ){
+
+            let choice = prompt(
+`Escolha:
 
 1 - Milho (R$10)
 2 - Tomate (R$15)
 3 - Soja (R$20)`
-    );
+            );
 
-    let cropType;
+            let cropType = null;
 
-    if(choice=="1") cropType="corn";
-    else if(choice=="2") cropType="tomato";
-    else if(choice=="3") cropType="soy";
-    else return;
+            if(choice==="1") cropType="corn";
+            if(choice==="2") cropType="tomato";
+            if(choice==="3") cropType="soy";
 
-    let plot = plots[index];
+            if(!cropType) return;
 
-    if(plot.crop) return;
+            if(money < crops[cropType].cost){
 
-    if(money < crops[cropType].cost){
-        alert("Dinheiro insuficiente!");
-        return;
-    }
+                alert("Dinheiro insuficiente!");
+                return;
+            }
 
-    money -= crops[cropType].cost;
+            money -= crops[cropType].cost;
 
-    plot.crop = cropType;
-    plot.progress = 0;
+            plot.crop = cropType;
+            plot.progress = 0;
 
-    updateUI();
-}
+            updateUI();
+        }
+    });
+});
 
 function updateUI(){
 
     document.getElementById("money").textContent = money;
-
     document.getElementById("corn").textContent = inventory.corn;
     document.getElementById("tomato").textContent = inventory.tomato;
     document.getElementById("soy").textContent = inventory.soy;
-
-    plots.forEach(plot=>{
-
-        if(!plot.crop){
-            plot.element.innerHTML="";
-            return;
-        }
-
-        if(plot.progress >= 100){
-            plot.element.innerHTML="✅";
-        }else{
-            plot.element.innerHTML=crops[plot.crop].emoji;
-        }
-    });
 }
-
-setInterval(()=>{
-
-    plots.forEach(plot=>{
-
-        if(!plot.crop) return;
-
-        if(plot.progress < 100){
-
-            plot.progress += crops[plot.crop].grow * growthBonus;
-
-            if(plot.progress > 100)
-                plot.progress = 100;
-
-        }
-    });
-
-    updateUI();
-
-},1000);
-
-plots.forEach(plot=>{
-
-    plot.element.addEventListener("dblclick",()=>{
-
-        if(plot.crop && plot.progress >= 100){
-
-            inventory[plot.crop]++;
-
-            plot.crop=null;
-            plot.progress=0;
-
-            updateUI();
-        }
-
-    });
-
-});
 
 let order;
 
-function newOrder(){
+function generateOrder(){
 
-    order={
+    order = {
         corn:Math.floor(Math.random()*3),
         tomato:Math.floor(Math.random()*3),
         soy:Math.floor(Math.random()*2),
-        reward:50+Math.floor(Math.random()*100)
+        reward:50 + Math.floor(Math.random()*120)
     };
-
-    document.getElementById("reqCorn").textContent=order.corn;
-    document.getElementById("reqTomato").textContent=order.tomato;
-    document.getElementById("reqSoy").textContent=order.soy;
-    document.getElementById("reward").textContent=order.reward;
 }
 
-function deliver(){
+generateOrder();
+
+function movePlayer(){
+
+    if(keys["w"] || keys["ArrowUp"])
+        player.y -= player.speed;
+
+    if(keys["s"] || keys["ArrowDown"])
+        player.y += player.speed;
+
+    if(keys["a"] || keys["ArrowLeft"])
+        player.x -= player.speed;
+
+    if(keys["d"] || keys["ArrowRight"])
+        player.x += player.speed;
+
+    player.x = Math.max(0, Math.min(canvas.width-40, player.x));
+    player.y = Math.max(35, Math.min(canvas.height-10, player.y));
+}
+
+function growCrops(){
+
+    farm.forEach(plot=>{
+
+        if(plot.crop && plot.progress < 100){
+
+            plot.progress += crops[plot.crop].speed;
+
+            if(plot.progress > 100)
+                plot.progress = 100;
+        }
+    });
+}
+
+function harvestCrops(){
+
+    farm.forEach(plot=>{
+
+        if(!plot.crop) return;
+
+        if(plot.progress < 100) return;
+
+        if(
+            player.x < plot.x + tileSize &&
+            player.x + player.size > plot.x &&
+            player.y < plot.y + tileSize &&
+            player.y + player.size > plot.y
+        ){
+
+            inventory[plot.crop]++;
+
+            plot.crop = null;
+            plot.progress = 0;
+
+            updateUI();
+        }
+    });
+}
+
+function deliverOrder(){
 
     if(
-        inventory.corn >= order.corn &&
-        inventory.tomato >= order.tomato &&
-        inventory.soy >= order.soy
+        player.x > city.x &&
+        player.x < city.x + city.w &&
+        player.y > city.y &&
+        player.y < city.y + city.h
     ){
 
-        inventory.corn -= order.corn;
-        inventory.tomato -= order.tomato;
-        inventory.soy -= order.soy;
+        if(
+            inventory.corn >= order.corn &&
+            inventory.tomato >= order.tomato &&
+            inventory.soy >= order.soy
+        ){
 
-        money += order.reward;
+            inventory.corn -= order.corn;
+            inventory.tomato -= order.tomato;
+            inventory.soy -= order.soy;
 
-        alert("Pedido entregue!");
+            money += order.reward;
 
-        if(money >= 1000){
-            alert("🏆 Parabéns! Você conectou o campo e a cidade e venceu!");
+            alert("Pedido entregue! +" + order.reward);
+
+            generateOrder();
+            updateUI();
+
+            if(money >= 1000){
+
+                alert(
+                    "🏆 PARABÉNS!\n\nVocê conectou o campo e a cidade e venceu!"
+                );
+            }
         }
-
-        newOrder();
-        updateUI();
-
-    }else{
-        alert("Você não possui produtos suficientes.");
     }
 }
 
-function randomEvent(){
+function drawFarm(){
 
-    const eventBox = document.getElementById("evento");
+    farm.forEach(plot=>{
 
-    if(Math.random()<0.5){
+        ctx.fillStyle = "#8d6e63";
+        ctx.fillRect(plot.x, plot.y, tileSize, tileSize);
 
-        growthBonus = 1.3;
+        ctx.strokeStyle = "#5d4037";
+        ctx.strokeRect(plot.x, plot.y, tileSize, tileSize);
 
-        eventBox.innerHTML="🌧️ Chuva! Crescimento acelerado.";
+        if(plot.crop){
 
-    }else{
+            ctx.font = "32px Arial";
 
-        growthBonus = 0.7;
+            if(plot.progress >= 100){
 
-        eventBox.innerHTML="☀️ Seca! Crescimento reduzido.";
+                ctx.fillText(
+                    "✅",
+                    plot.x + 25,
+                    plot.y + 55
+                );
 
-    }
+            }else{
 
-    setTimeout(()=>{
-        growthBonus=1;
-        eventBox.innerHTML="";
-    },10000);
+                ctx.fillText(
+                    crops[plot.crop].emoji,
+                    plot.x + 25,
+                    plot.y + 55
+                );
+
+                ctx.fillStyle = "green";
+
+                ctx.fillRect(
+                    plot.x + 5,
+                    plot.y + 75,
+                    (plot.progress/100)*80,
+                    8
+                );
+            }
+        }
+    });
 }
 
-setInterval(randomEvent,30000);
+function drawCity(){
 
-newOrder();
+    ctx.fillStyle = "#cfcfcf";
+    ctx.fillRect(city.x, city.y, city.w, city.h);
+
+    ctx.strokeStyle = "#555";
+    ctx.strokeRect(city.x, city.y, city.w, city.h);
+
+    ctx.fillStyle = "black";
+    ctx.font = "24px Arial";
+    ctx.fillText("🏙️ Cidade", city.x+25, city.y+40);
+
+    ctx.font = "18px Arial";
+
+    ctx.fillText(
+        `🌽 ${order.corn}`,
+        city.x+20,
+        city.y+90
+    );
+
+    ctx.fillText(
+        `🍅 ${order.tomato}`,
+        city.x+20,
+        city.y+125
+    );
+
+    ctx.fillText(
+        `🫘 ${order.soy}`,
+        city.x+20,
+        city.y+160
+    );
+
+    ctx.fillText(
+        `💰 R$${order.reward}`,
+        city.x+20,
+        city.y+210
+    );
+
+    ctx.fillText(
+        "Entre aqui",
+        city.x+20,
+        city.y+245
+    );
+}
+
+function drawPlayer(){
+
+    ctx.font = "36px Arial";
+    ctx.fillText("🧑‍🌾", player.x, player.y);
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawFarm();
+    drawCity();
+    drawPlayer();
+}
+
+function gameLoop(){
+
+    movePlayer();
+    growCrops();
+    harvestCrops();
+    deliverOrder();
+
+    draw();
+
+    requestAnimationFrame(gameLoop);
+}
+
 updateUI();
+gameLoop();
 
 </script>
 
